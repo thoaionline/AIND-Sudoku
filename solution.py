@@ -147,6 +147,53 @@ def reduce_puzzle(values):
 def search(values):
     pass
 
+def get_paths_for_grid(grid):
+    # Number of branches/possibilities (2..9) to check
+    for branches_count in range(2,10):
+        for row in rows:
+            for col in cols:
+                location = row+col
+                if len(grid[location])==branches_count:
+                    # Let's branch off this cell
+                    for posible_value in grid[location]:
+                        yield (location,posible_value)
+
+def verify(grid):
+    """
+    Verify whether the grid is a complete solution
+    :param grid:
+        The dictionary representing the grid
+    :return:
+        True if grid is complete, False otherwise
+    """
+
+    for cell_value in grid.values():
+        if (len(cell_value)!=1):
+            return False
+
+    return True
+
+def solve_with_map(values):
+
+    # Eliminate all uncertainties
+    values = eliminate(values)
+
+    # Make an assumption and go deeper
+    for location, value in get_paths_for_grid(values):
+        # Backup
+        current_values = values.copy()
+        # Make change and recursively check for next version
+        assign_value(values,location,value)
+        # If this path succeed, return it for pickup by solve or solve_with_map
+        solve_with_map(values)
+        if (verify(values)):
+            return values
+        # Otherwise, restore
+        values = current_values
+
+    # Now that we've tried everything we could
+    return values
+
 def solve(grid):
     """
     Find the solution to a Sudoku grid.
@@ -157,9 +204,7 @@ def solve(grid):
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
     values = grid_values(grid)
-    eliminate(values)
-
-    return values
+    return solve_with_map(values)
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
