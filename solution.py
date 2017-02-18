@@ -4,6 +4,7 @@ assignments = []
 rows = 'ABCDEFGHI'
 cols = '123456789'
 all_values = '123456789'
+units = {}
 
 def assign_value(values, box, value):
     """
@@ -43,11 +44,23 @@ def grid_values(grid):
     """
 
     grid_map = {}
+
+    # Initialise an empty grid, for visualisation
+    for row in rows:
+        for col in cols:
+            grid_map[row+col]='';
+
+    # Empty map
+    assignments.append(grid_map.copy())
+
     i = 0;
     for row in rows:
         for col in cols:
             grid_map[row+col] = all_values if grid[i]=='.' else grid[i]
             i+=1
+
+    # First map
+    assignments.append(grid_map.copy())
 
     return grid_map
 
@@ -58,10 +71,72 @@ def display(values):
     Args:
         values(dict): The sudoku in dictionary form
     """
-    pass
+    assignments.append(values.copy())
+
+def unit_map():
+    """
+    Generate the units
+    `units` is a map of arrays, each containing elements in the same group,
+    Group are named 1..9 for columns, A..I for rows, and A4, A4,... G7 for blocks, X & Y for the diagonal lines
+
+    :return:
+        A dictionary representing the cells in each unit/group
+
+    """
+
+    # Only initiate once
+    if len(units)==0:
+
+        # Rows and columns
+        for row in rows:
+            units[row] = [row+col for col in cols]
+        for col in cols:
+            units[col] = [row+col for row in rows]
+
+        # 3x3 blocks
+        for i,row in enumerate(rows):
+            for j,col in enumerate(cols):
+                block_name = rows[i-i%3]+cols[j-j%3]
+                # Record all units that this cell belong to
+                if i%3==0 and j%3==0:
+                    # First cell in a block will be used as the block name
+                    units[row+col] = [row+col]
+                else:
+                    # Add the rest of the cells in this block to the unit
+                    units[block_name].append(row+col)
+
+        units['X'] = [(rows[i] + cols[i]) for i in range(0, 9)]
+        units['Y'] = [(rows[i] + cols[8 - i]) for i in range(0, 9)]
+
+    return units
 
 def eliminate(values):
-    pass
+    """
+    Eliminate all impossible possibilities from a board
+    :param values: a map represent the sudoku board
+    :return:
+    """
+
+    units = unit_map()
+
+    updated = True
+
+    while updated:
+        updated = False
+        for unit in units.values():
+            for cell in unit:
+                if len(values[cell]) == 1:
+                    for other_cell in unit:
+                        if cell!=other_cell:
+                            if values[cell][0] in values[other_cell]:
+                                updated = True
+                                values = assign_value(
+                                    values,
+                                    other_cell,
+                                    values[other_cell].replace(values[cell], '', 1)
+                                )
+
+    return values
 
 def only_choice(values):
     pass
@@ -81,6 +156,10 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
+    values = grid_values(grid)
+    eliminate(values)
+
+    return values
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
