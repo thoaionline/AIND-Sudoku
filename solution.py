@@ -3,6 +3,7 @@ assignments = []
 # Rows and columns are shared between below methods
 rows = 'ABCDEFGHI'
 cols = '123456789'
+all_values = '123456789'
 
 def assign_value(values, box, value):
     """
@@ -45,7 +46,7 @@ def grid_values(grid):
     i = 0;
     for row in rows:
         for col in cols:
-            grid_map[row+col]=grid[i]
+            grid_map[row+col] = all_values if grid[i]=='.' else grid[i]
             i+=1
 
     return grid_map
