@@ -1,5 +1,9 @@
 assignments = []
 
+# Rows and columns are shared between below methods
+rows = 'ABCDEFGHI'
+cols = '123456789'
+
 def assign_value(values, box, value):
     """
     Please use this function to update your values dictionary!
@@ -36,7 +40,16 @@ def grid_values(grid):
             Keys: The boxes, e.g., 'A1'
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
-    pass
+
+    grid_map = {}
+    i = 0;
+    for row in rows:
+        for col in cols:
+            grid_map[row+col]=grid[i]
+            i+=1
+
+    return grid_map
+
 
 def display(values):
     """
