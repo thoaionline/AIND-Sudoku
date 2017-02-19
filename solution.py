@@ -13,7 +13,8 @@ boxes = cross(rows, cols)
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
-unitlist = row_units + column_units + square_units
+diag_units = [[(rows[i] + cols[i]) for i in range(0, 9)] for cols in [cols, cols[::-1]]]
+unitlist = row_units + column_units + square_units + diag_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
@@ -50,28 +51,32 @@ def grid_values(grid):
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
 
-    grid_map = {}
-    all_values = '123456789'
+    values = []
+    all_digits = '123456789'
+    for c in grid:
+        if c == '.':
+            values.append(all_digits)
+        elif c in all_digits:
+            values.append(c)
 
-    i = 0;
-    for row in rows:
-        for col in cols:
-            grid_map[row+col] = all_values if grid[i]=='.' else grid[i]
-            i+=1
+    assert len(values) == 81
 
-    # First map
-    assignments.append(grid_map.copy())
-
-    return grid_map
+    return dict(zip(boxes, values))
 
 
 def display(values):
     """
     Display the values as a 2-D grid.
-    Args:
-        values(dict): The sudoku in dictionary form
+    Input: The sudoku in dictionary form
+    Output: None
     """
-    assignments.append(values.copy())
+    width = 1+max(len(values[s]) for s in boxes)
+    line = '+'.join(['-'*(width*3)]*3)
+    for r in rows:
+        print(''.join(values[r+c].center(width)+('|' if c in '36' else '')
+                      for c in cols))
+        if r in 'CF': print(line)
+    return
 
 def unit_map():
     """
@@ -111,52 +116,68 @@ def unit_map():
     return units
 
 def eliminate(values):
+    """Eliminate values from peers of each box with a single value.
+
+    Go through all the boxes, and whenever there is a box with a single value,
+    eliminate this value from the set of values of all its peers.
+
+    Args:
+        values: Sudoku in dictionary form.
+    Returns:
+        Resulting Sudoku in dictionary form after eliminating values.
     """
-    Eliminate all impossible possibilities from a board
-    :param values: a map represent the sudoku board
-    :return:
-    """
-
-    units = unit_map()
-
-    updated = True
-
-    while updated:
-        updated = False
-        for unit in units.values():
-            for cell in unit:
-                if len(values[cell]) == 1:
-                    for other_cell in unit:
-                        if cell!=other_cell:
-                            if values[cell][0] in values[other_cell]:
-                                updated = True
-                                values = assign_value(
-                                    values,
-                                    other_cell,
-                                    values[other_cell].replace(values[cell], '', 1)
-                                )
+    solved_values = [box for box in values.keys() if len(values[box]) == 1]
+    for box in solved_values:
+        digit = values[box]
+        for peer in peers[box]:
+            assign_value(values, peer, values[peer].replace(digit, ''))
 
     return values
 
 def only_choice(values):
-    pass
+    """Finalize all values that are the only choice for a unit.
+
+    Go through all the units, and whenever there is a unit with a value
+    that only fits in one box, assign the value to this box.
+
+    Input: Sudoku in dictionary form.
+    Output: Resulting Sudoku in dictionary form after filling in only choices.
+    """
+    for unit in unitlist:
+        for digit in '123456789':
+            dplaces = [box for box in unit if digit in values[box]]
+            if len(dplaces) == 1:
+                values[dplaces[0]] = digit
+    return values
 
 def reduce_puzzle(values):
-    pass
+    last_checksum = -1
+
+    while True:
+
+        eliminate(values)
+        only_choice(values)
+
+        next_checksum = sum(len(box) for box in values.values())
+        if next_checksum==last_checksum:
+            break
+        else:
+            last_checksum = next_checksum
+
+    return values
 
 def search(values):
     pass
 
 def get_paths_for_grid(grid):
     # Number of branches/possibilities (2..9) to check
-    for branches_count in range(2,10):
-        for row in rows:
-            for col in cols:
-                location = row+col
-                if len(grid[location])==branches_count:
-                    # Let's branch off this cell
-                    for posible_value in grid[location]:
-                        yield (location,posible_value)
+    for row in rows:
+        for col in cols:
+            location = row + col
+            if len(grid[location]) > 1:
+                # Let's branch off this cell
+                for posible_value in grid[location]:
+                    yield (location, posible_value)
 
 def verify(grid):
     """
@@ -176,23 +197,25 @@ def verify(grid):
 def solve_with_map(values):
 
     # Eliminate all uncertainties
-    values = eliminate(values)
+    reduce_puzzle(values)
 
+    assignments.append(values.copy())
     # Make an assumption and go deeper
     for location, value in get_paths_for_grid(values):
         # Backup
         current_values = values.copy()
+        assignments.append(current_values)
         # Make change and recursively check for next version
         assign_value(values,location,value)
         # If this path succeed, return it for pickup by solve or solve_with_map
-        solve_with_map(values)
-        if (verify(values)):
-            return values
-        # Otherwise, restore
+        sub_solution = solve_with_map(values)
+        if sub_solution:
+            return sub_solution
+        # Otherwise, restore and continue
         values = current_values
 
     # Now that we've tried everything we could
-    return values
+    return values if verify(values) else False
 
 def solve(grid):
     """
