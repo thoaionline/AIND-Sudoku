@@ -14,7 +14,7 @@ row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
 diag_units = [[(rows[i] + cols[i]) for i in range(0, 9)] for cols in [cols, cols[::-1]]]
-unitlist = row_units + column_units + square_units + diag_units
+unitlist = row_units + column_units + square_units #+ diag_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
@@ -137,24 +137,21 @@ def reduce_puzzle(values):
 
     return values
 
-def search(values):
+def search(value):
     """
-    Search for
-    :param values:
-    :return:
+    Search and return all possible paths from current state
+
+    Args:
+        value(dict)
+    Returns:
+        A enumerable of (location, possible_values)
     """
-    counts = {}
-
-    return naked_twins
-
-def paths_for_grid(grid):
-    # Number of branches/possibilities (2..9) to check
     for row in rows:
         for col in cols:
             location = row + col
-            if len(grid[location]) > 1:
+            if len(value[location]) > 1:
                 # Let's branch off this cell
-                for posible_value in grid[location]:
+                for posible_value in value[location]:
                     yield (location, posible_value)
 
 def verify(grid):
@@ -181,12 +178,16 @@ def solve_with_map(values, level = 1):
     global max_depth
     max_depth = max(max_depth, level)
 
+    print("Level "+str(level))
+    display(values)
+
     # Resolve all trivial boxes
-    reduce_puzzle(values)
+    if not reduce_puzzle(values):
+        return False
 
     assignments.append(values.copy())
     # Make an assumption and go deeper
-    for location, value in paths_for_grid(values):
+    for location, value in search(values):
         # Backup
         current_values = values.copy()
         assignments.append(current_values)
@@ -218,6 +219,7 @@ def solve(grid):
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
+    diag_sudoku_grid = '.................................................................................'
     display(solve(diag_sudoku_grid))
 
     try:
