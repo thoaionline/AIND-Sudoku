@@ -18,6 +18,8 @@ unitlist = row_units + column_units + square_units + diag_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
+max_depth = 0
+
 def assign_value(values, box, value):
     """
     Please use this function to update your values dictionary!
@@ -63,13 +65,19 @@ def grid_values(grid):
 
     return dict(zip(boxes, values))
 
-
 def display(values):
     """
     Display the values as a 2-D grid.
     Input: The sudoku in dictionary form
     Output: None
     """
+
+    print("Max depth: " + str(max_depth))
+
+    if not values:
+        print("No solution")
+        return
+
     width = 1+max(len(values[s]) for s in boxes)
     line = '+'.join(['-'*(width*3)]*3)
     for r in rows:
@@ -77,43 +85,6 @@ def display(values):
                       for c in cols))
         if r in 'CF': print(line)
     return
-
-def unit_map():
-    """
-    Generate the units
-    `units` is a map of arrays, each containing elements in the same group,
-    Group are named 1..9 for columns, A..I for rows, and A4, A4,... G7 for blocks, X & Y for the diagonal lines
-
-    :return:
-        A dictionary representing the cells in each unit/group
-
-    """
-
-    # Only initiate once
-    if len(units)==0:
-
-        # Rows and columns
-        for row in rows:
-            units[row] = [row+col for col in cols]
-        for col in cols:
-            units[col] = [row+col for row in rows]
-
-        # 3x3 blocks
-        for i,row in enumerate(rows):
-            for j,col in enumerate(cols):
-                block_name = rows[i-i%3]+cols[j-j%3]
-                # Record all units that this cell belong to
-                if i%3==0 and j%3==0:
-                    # First cell in a block will be used as the block name
-                    units[row+col] = [row+col]
-                else:
-                    # Add the rest of the cells in this block to the unit
-                    units[block_name].append(row+col)
-
-        units['X'] = [(rows[i] + cols[i]) for i in range(0, 9)]
-        units['Y'] = [(rows[i] + cols[8 - i]) for i in range(0, 9)]
-
-    return units
 
 def eliminate(values):
     """Eliminate values from peers of each box with a single value.
@@ -167,9 +138,16 @@ def reduce_puzzle(values):
     return values
 
 def search(values):
-    pass
+    """
+    Search for
+    :param values:
+    :return:
+    """
+    counts = {}
 
-def get_paths_for_grid(grid):
+    return naked_twins
+
+def paths_for_grid(grid):
     # Number of branches/possibilities (2..9) to check
     for row in rows:
         for col in cols:
@@ -181,7 +159,10 @@ def get_paths_for_grid(grid):
 
 def verify(grid):
     """
-    Verify whether the grid is a complete solution
+    Verify whether the grid is a complete solution.
+
+    This function assumes that the solver is logically correct and only checks for a filled grid.
+
     :param grid:
         The dictionary representing the grid
     :return:
@@ -194,21 +175,25 @@ def verify(grid):
 
     return True
 
-def solve_with_map(values):
+def solve_with_map(values, level = 1):
 
-    # Eliminate all uncertainties
+    # Record the level
+    global max_depth
+    max_depth = max(max_depth, level)
+
+    # Resolve all trivial boxes
     reduce_puzzle(values)
 
     assignments.append(values.copy())
     # Make an assumption and go deeper
-    for location, value in get_paths_for_grid(values):
+    for location, value in paths_for_grid(values):
         # Backup
         current_values = values.copy()
         assignments.append(current_values)
         # Make change and recursively check for next version
         assign_value(values,location,value)
         # If this path succeed, return it for pickup by solve or solve_with_map
-        sub_solution = solve_with_map(values)
+        sub_solution = solve_with_map(values, level + 1)
         if sub_solution:
             return sub_solution
         # Otherwise, restore and continue
@@ -226,6 +211,8 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
+    global max_depth
+    max_depth = 0
     values = grid_values(grid)
     return solve_with_map(values)
 
