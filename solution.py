@@ -3,8 +3,19 @@ assignments = []
 # Rows and columns are shared between below methods
 rows = 'ABCDEFGHI'
 cols = '123456789'
-all_values = '123456789'
-units = {}
+
+def cross(a, b):
+    "Cross product of elements in A and elements in B."
+    return [s + t for s in a for t in b]
+
+boxes = cross(rows, cols)
+
+row_units = [cross(r, cols) for r in rows]
+column_units = [cross(rows, c) for c in cols]
+square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
+unitlist = row_units + column_units + square_units
+units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
+peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
 def assign_value(values, box, value):
     """
@@ -28,10 +39,6 @@ def naked_twins(values):
     # Find all instances of naked twins
     # Eliminate the naked twins as possibilities for their peers
 
-def cross(A, B):
-    "Cross product of elements in A and elements in B."
-    pass
-
 def grid_values(grid):
     """
     Convert grid into a dict of {square: char} with '123456789' for empties.
@@ -44,14 +51,7 @@ def grid_values(grid):
     """
 
     grid_map = {}
-
-    # Initialise an empty grid, for visualisation
-    for row in rows:
-        for col in cols:
-            grid_map[row+col]='';
-
-    # Empty map
-    assignments.append(grid_map.copy())
+    all_values = '123456789'
 
     i = 0;
     for row in rows:
