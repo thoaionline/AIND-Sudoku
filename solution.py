@@ -51,6 +51,7 @@ def naked_twins(values):
         for twin in  [value for (value, locations) in value_to_locations.items() if len(value) == 2 and len(locations) == 2]:
             for other_location in [l for l in unit if values[l]!=twin]:
                 for digit in twin:
+                    assign_value(values,other_location,values[other_location].replace(digit,'',1))
 
     return values
 
