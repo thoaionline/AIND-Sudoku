@@ -14,7 +14,7 @@ row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
 diag_units = [[(rows[i] + cols[i]) for i in range(0, 9)] for cols in [cols, cols[::-1]]]
-unitlist = row_units + column_units + square_units #+ diag_units
+unitlist = row_units + column_units + square_units + diag_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
@@ -38,9 +38,21 @@ def naked_twins(values):
     Returns:
         the values dictionary with the naked twins eliminated from peers.
     """
+    for unit in unitlist:
+        # { value: [location] } dictionary
+        value_to_locations = {}
+        for location in unit:
+            value = values[location]
+            if value in value_to_locations:
+                value_to_locations[value].append(location)
+            else:
+                value_to_locations[value] = [location]
 
-    # Find all instances of naked twins
-    # Eliminate the naked twins as possibilities for their peers
+        for twin in  [value for (value, locations) in value_to_locations.items() if len(value) == 2 and len(locations) == 2]:
+            for other_location in [l for l in unit if values[l]!=twin]:
+                for digit in twin:
+
+    return values
 
 def grid_values(grid):
     """
@@ -128,6 +140,7 @@ def reduce_puzzle(values):
 
         eliminate(values)
         only_choice(values)
+        naked_twins(values)
 
         next_checksum = sum(len(box) for box in values.values())
         if next_checksum==last_checksum:
@@ -178,8 +191,8 @@ def solve_with_map(values, level = 1):
     global max_depth
     max_depth = max(max_depth, level)
 
-    print("Level "+str(level))
-    display(values)
+    # print("Level "+str(level))
+    # display(values)
 
     # Resolve all trivial boxes
     if not reduce_puzzle(values):
@@ -219,7 +232,6 @@ def solve(grid):
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
-    diag_sudoku_grid = '.................................................................................'
     display(solve(diag_sudoku_grid))
 
     try:
