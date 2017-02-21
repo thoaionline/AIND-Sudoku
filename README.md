@@ -3,11 +3,13 @@
 
 # Question 1 (Naked Twins)
 Q: How do we use constraint propagation to solve the naked twins problem?  
-A: *Student should provide answer here*
+A: When 2 numbers are the only possible values in 2 squares of the same unit, we know that such squares will be filled with the 2 values, making those values unavailable to other peers in the unit. We can eliminate the possibility of these 2 values being used for other square (constraint propagation).
 
 # Question 2 (Diagonal Sudoku)
 Q: How do we use constraint propagation to solve the diagonal sudoku problem?  
-A: *Student should provide answer here*
+A: First, we break down the grid into units of rows, columns, block and the 2 diagonal lines. For each determined square A (either pre-filled or one that has only one possible value), we eliminate the possibility of A's value being used for other squares in each of the unit that A belongs to (constraint propagation).
+
+Constraint propagation alone is not sufficient here however. We also need to apply search technique after all constraints has been exploited. At each level of the search, we re-apply the above constraint propagation technique to find more squares' value and thus reduce the depth of the search tree.
 
 ### Install
 
